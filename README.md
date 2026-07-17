@@ -5,7 +5,7 @@
 [![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 
-This project is a sandbox lab designed to explore and demonstrate different **Docker networking modes** (Bridge, Host, and None) using a FastAPI backend, a persistent SQLite database, and a Redis cache. 
+This project is a sandbox lab designed to explore and demonstrate different **Docker networking modes** (Bridge, Host, and None) using a FastAPI backend, a persistent SQLite database, and a Redis cache.
 
 It provides endpoints to check container networking info (`/network-info`), inspect database and cache integration (cache-aside pattern on `/items/cached`), and run real-time caching operations.
 
@@ -65,10 +65,71 @@ flowchart TD
 This project contains a fully configured Helm chart and a declarative Helmfile setup to run the FastAPI application, SQLite database (with persistent volumes), and a Redis StatefulSet in a Kubernetes cluster.
 
 ### Prerequisites
+
 - **kubectl** CLI installed.
 - **Helm** (v3+) installed.
 - **Helmfile** installed.
 - A running Kubernetes cluster (e.g., Minikube, Kind, Docker Desktop Kubernetes).
+
+---
+
+### Installing Helm and Helmfile
+
+#### Install Helm
+
+Helm is the Kubernetes package manager. Follow these instructions based on your operating system:
+
+**macOS (using Homebrew):**
+```bash
+brew install helm
+```
+
+**Linux (using curl):**
+```bash
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
+
+**Windows (using Chocolatey):**
+```bash
+choco install kubernetes-helm
+```
+
+**Verify the installation:**
+```bash
+helm version
+```
+
+For detailed installation instructions, visit the [official Helm documentation](https://helm.sh/docs/intro/install/).
+
+---
+
+#### Install Helmfile
+
+Helmfile is a declarative way to manage Helm charts across multiple environments. Install it using:
+
+**macOS (using Homebrew):**
+```bash
+brew install helmfile
+```
+
+**Linux (using curl):**
+```bash
+wget https://github.com/roboll/helmfile/releases/download/v0.144.0/helmfile_linux_amd64
+chmod +x helmfile_linux_amd64
+sudo mv helmfile_linux_amd64 /usr/local/bin/helmfile
+```
+
+**Windows (using Chocolatey):**
+```bash
+choco install helmfile
+```
+
+**Verify the installation:**
+```bash
+helmfile version
+```
+
+For detailed installation instructions, visit the [official Helmfile documentation](https://github.com/roboll/helmfile).
 
 ---
 
@@ -205,4 +266,3 @@ To run the application locally on your host machine:
    ```bash
    uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
    ```
-
