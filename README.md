@@ -1,40 +1,64 @@
-# FastAPI + SQLite + Redis Networking Lab
+# Kubernetes Deployment Lab — FastAPI + SQLite + Redis
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)](https://kubernetes.io/)
+[![Helm](https://img.shields.io/badge/Helm-0F162D?style=for-the-badge&logo=helm&logoColor=white)](https://helm.sh/)
 [![Redis](https://img.shields.io/badge/Redis-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io/)
-[![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 
-This project is a sandbox lab designed to explore and demonstrate different **Docker networking modes** (Bridge, Host, and None) using a FastAPI backend, a persistent SQLite database, and a Redis cache.
+This project is a hands-on sandbox lab designed to demonstrate how to package and orchestrate an existing multi-tier web application into Kubernetes. It leverages **Helm** and **Helmfile** for declarative, environment-specific deployments.
 
-It provides endpoints to check container networking info (`/network-info`), inspect database and cache integration (cache-aside pattern on `/items/cached`), and run real-time caching operations.
+The architecture features a FastAPI backend, a persistent SQLite database storing state inside a PersistentVolumeClaim (PVC), and a Redis cache structured as a StatefulSet.
 
 ---
 
 ## Architecture Diagram
 
-The system operates differently depending on the network configuration:
+The Kubernetes infrastructure layout for the deployment:
 
 ```mermaid
-flowchart TD
-    subgraph Host ["Host Machine"]
-        Client["API Client (Browser/curl)"]
+graph TD
+    subgraph Cluster ["Kubernetes Cluster"]
+        subgraph NS ["Namespace: fastapi-dev"]
+            Ingress["Ingress (Optional)"]
+            
+            subgraph FastAPI_Svc_Block ["FastAPI Service"]
+                SvcFastAPI["Service: fastapi-app (Port 80)"]
+            end
+            
+            subgraph FastAPI_Deploy ["Deployment: fastapi-app"]
+                Pod1["FastAPI Pod 1 (Port 8000)"]
+                Pod2["FastAPI Pod 2 (Port 8000)"]
+            end
+            
+            PVCFastAPI[("PVC: sqlite-data (1Gi)")]
+            
+            subgraph Redis_Svc_Block ["Redis Service"]
+                SvcRedis["Service: fastapi-app-redis-master (Port 6379)"]
+            end
+            
+            subgraph Redis_SS ["StatefulSet: fastapi-app-redis-master"]
+                PodRedis["Redis Pod (Port 6379)"]
+            end
+            
+            PVCRedis[("PVC: redis-data (1Gi)")]
+        end
     end
 
-    subgraph Docker ["Docker Virtualization Network Space"]
-        subgraph AppContainer ["App Container (FastAPI)"]
-            FastAPI["FastAPI Web Server"]
-            SQLite[("SQLite DB (./data/app.db)")]
-        end
-
-        subgraph RedisContainer ["Redis Container (redis)"]
-            Redis[("Redis Cache")]
-        end
-    end
-
-    Client -->|Port 8000| FastAPI
-    FastAPI -->|Local File IO| SQLite
-    FastAPI -->|Port 6379| Redis
+    Client["API Client / Browser"] --> Ingress
+    Ingress --> SvcFastAPI
+    Client -->|Port-Forward 8080:80| SvcFastAPI
+    
+    SvcFastAPI --> Pod1
+    SvcFastAPI --> Pod2
+    
+    Pod1 --> PVCFastAPI
+    Pod2 --> PVCFastAPI
+    
+    Pod1 --> SvcRedis
+    Pod2 --> SvcRedis
+    
+    SvcRedis --> PodRedis
+    PodRedis --> PVCRedis
 ```
 
 ---
