@@ -60,116 +60,96 @@ flowchart TD
 - **Docker** and **Docker Compose** installed.
 - Python 3.12+ (optional, only if you wish to run the app outside of Docker).
 
-### 1. Default Setup: Bridge Network Mode
+## Kubernetes Deployment (Helm & Helmfile)
 
-By default, Docker Compose spins up the FastAPI app and Redis in a custom bridge network where the containers communicate using Docker's internal DNS.
+This project contains a fully configured Helm chart and a declarative Helmfile setup to run the FastAPI application, SQLite database (with persistent volumes), and a Redis StatefulSet in a Kubernetes cluster.
+
+### Prerequisites
+- **kubectl** CLI installed.
+- **Helm** (v3+) installed.
+- **Helmfile** installed.
+- A running Kubernetes cluster (e.g., Minikube, Kind, Docker Desktop Kubernetes).
+
+---
+
+### Option A: Deploying with Helm (Directly)
+
+Use Helm to install the chart in a single namespace (e.g., `fastapi-dev`):
 
 ```bash
-# Start the containers
-docker compose up --build -d
+# 1. Validate the Helm chart structure
+helm lint ./helm/fastapi-app
 
-# Verify that the containers are running
-docker compose ps
+# 2. Deploy/Install the application and Redis dependency
+helm install fastapi-app ./helm/fastapi-app \
+  --namespace fastapi-dev \
+  --create-namespace \
+  --wait \
+  --timeout 5m
 ```
 
-Access the API documentation at: **`http://localhost:8000/docs`**
-
-To clean up:
+To override values for specific environments (e.g., using staging configurations):
 ```bash
-docker compose down -v
+helm install fastapi-app ./helm/fastapi-app \
+  --namespace fastapi-staging \
+  --create-namespace \
+  -f ./environments/staging/values.yaml \
+  --wait
 ```
 
 ---
 
-## Docker Networking Experiments
+### Option B: Deploying with Helmfile (Declarative & Recommended)
 
-The application is built to demonstrate three distinct Docker networking modes. Below is how to test and verify each of them using the main `docker-compose.yml` or manual overrides.
+Helmfile allows you to manage deployments declaratively across environments (`dev`, `staging`, `prod`) using environment-specific values files.
 
-### Experiment 1: Bridge Network (Default)
+```bash
+# 1. Preview changes before applying (dry-run)
+helmfile -e dev diff
 
-In this mode, Docker creates a private internal bridge network. The application container accesses Redis via the service name alias `redis` configured in `docker-compose.yml`.
+# 2. Deploy to the dev environment
+helmfile -e dev sync
+```
 
-- **Environment settings**: `REDIS_HOST=redis`
+To deploy to other environments:
+```bash
+# Deploy to staging
+helmfile -e staging sync
 
-#### Testing Bridge Mode
-1. Run:
-   ```bash
-   docker compose up --build -d
-   ```
-2. Open `http://localhost:8000/network-info`
-3. **Expected JSON response**:
-   ```json
-   {
-     "container_hostname": "<container-id>",
-     "container_ip": "172.x.x.x",
-     "redis": {
-       "redis_host_configured": "redis",
-       "redis_port_configured": 6379,
-       "container_hostname": "<container-id>",
-       "reachable": true
-     }
-   }
-   ```
-4. Clean up:
-   ```bash
-   docker compose down -v
-   ```
-
----
-
-### Experiment 2: Host Network
-
-In host network mode, the container shares the host machine's network namespace directly. It does not get its own private IP address, and ports are bound directly to the host.
-
-To run the experiment in Host network mode:
-1. Open [docker-compose.yml](file:///Users/sany/Projects/fastapi-sqlite-redis/docker-compose.yml).
-2. Set `network_mode: host` on both services and remove/comment out the `ports` mapping (since ports map automatically to the host namespace in host mode).
-3. Set the environment variable `REDIS_HOST=127.0.0.1`.
-4. Run:
-   ```bash
-   docker compose up --build -d
-   ```
-
-> [!WARNING]
-> **Docker Desktop for Mac & Windows Limitation**
->
-> On macOS and Windows, Docker runs inside a lightweight Linux utility Virtual Machine (VM). Therefore:
-> 1. `network_mode: host` binds the container ports directly to the **Docker VM**, not your Mac/Windows host machine.
-> 2. You **cannot** access `http://localhost:8000` from your Mac browser directly in this mode.
-> 3. To connect to the app in Host mode, you would need to hit the internal IP address of the Docker utility VM or run the experiment on a native Linux host.
-> 4. For testing on Linux, the containers will be reachable at `http://localhost:8000`.
-
-If testing on native Linux, `http://localhost:8000/network-info` will show:
-```json
-{
-  "container_hostname": "<your-host-machine-name>",
-  "container_ip": "<your-host-ip>",
-  "redis": {
-    "redis_host_configured": "127.0.0.1",
-    "redis_port_configured": 6379,
-    "container_hostname": "<your-host-machine-name>",
-    "reachable": true
-  }
-}
+# Deploy to production
+helmfile -e prod sync
 ```
 
 ---
 
-### Experiment 3: None Network
+### Post-Deployment & Verification
 
-In this mode, the container is placed in a completely isolated network stack with only the loopback interface (`lo` / `127.0.0.1`). It has no route to the outside world and cannot connect to Redis.
-
-To run the experiment in None network mode:
-1. Open [docker-compose.yml](file:///Users/sany/Projects/fastapi-sqlite-redis/docker-compose.yml).
-2. Set `network_mode: none` on the `app` service and comment out the `ports` mapping.
-3. Run:
+1. **Verify Resources are Running**:
    ```bash
-   docker compose up --build -d
+   kubectl get all -n fastapi-dev
    ```
 
-In this mode:
-- SQLite operations on `/items` will **still work** because SQLite is file-based and runs locally.
-- Redis-dependent endpoints like `/counter` will fail gracefully, returning `"source": "redis-unreachable"`.
+2. **Access the Application**:
+   Port-forward the FastAPI service to your local machine:
+   ```bash
+   kubectl port-forward svc/fastapi-app 8080:80 -n fastapi-dev
+   ```
+   Now open your browser to **`http://localhost:8080/docs`** to view endpoints.
+
+3. **Verify Caching and DB functionality**:
+   ```bash
+   # Test counter (Redis integration)
+   curl http://localhost:8080/counter
+
+   # Test cache-aside items retrieval
+   curl http://localhost:8080/items/cached
+   ```
+
+4. **Run Helm Tests**:
+   ```bash
+   helm test fastapi-app -n fastapi-dev
+   ```
+
 
 ---
 

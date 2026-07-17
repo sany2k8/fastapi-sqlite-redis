@@ -1,0 +1,49 @@
+# =============================================================================
+# Helmfile - Declarative Helm Chart Manager
+# =============================================================================
+# Manages the deployment of the fastapi-app chart across environments.
+#
+# Usage:
+#   helmfile -e dev sync       # Deploy to dev
+#   helmfile -e staging sync   # Deploy to staging
+#   helmfile -e prod sync      # Deploy to production
+# =============================================================================
+
+environments:
+  dev:
+    values:
+      - environments/dev/values.yaml
+  staging:
+    values:
+      - environments/staging/values.yaml
+  prod:
+    values:
+      - environments/prod/values.yaml
+
+---
+
+releases:
+  - name: fastapi-app
+    namespace: fastapi-{{ .Environment.Name }}
+    createNamespace: true
+    chart: ./helm/fastapi-app
+    values:
+      - ./helm/fastapi-app/values.yaml   # base defaults
+    {{- if eq .Environment.Name "dev" }}
+      - environments/dev/values.yaml
+    {{- else if eq .Environment.Name "staging" }}
+      - environments/staging/values.yaml
+    {{- else if eq .Environment.Name "prod" }}
+      - environments/prod/values.yaml
+    {{- end }}
+    hooks:
+      - events: ["presync"]
+        showlogs: true
+        command: "echo"
+        args:
+          - "Deploying fastapi-app to {{ .Environment.Name }} environment..."
+      - events: ["postsync"]
+        showlogs: true
+        command: "echo"
+        args:
+          - "✅ fastapi-app deployed successfully to {{ .Environment.Name }}!"

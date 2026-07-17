@@ -1,0 +1,54 @@
+# =============================================================================
+# Staging Environment Overrides
+# =============================================================================
+# Moderate resources, 2 replicas, mirrors production config at lower scale.
+
+replicaCount: 2
+
+image:
+  tag: "latest"
+  pullPolicy: Always
+
+app:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: fastapi-staging.local
+      paths:
+        - path: /
+          pathType: Prefix
+
+autoscaling:
+  enabled: false
+
+persistence:
+  enabled: true
+  size: 1Gi
+
+redis:
+  enabled: true
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+  persistence:
+    enabled: true
+    size: 1Gi

@@ -1,0 +1,3 @@
+# Helm chart artifacts
+helm/fastapi-app/charts/
+helm/fastapi-app/*.tgz

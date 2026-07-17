@@ -1,0 +1,13 @@
+apiVersion: v2
+name: fastapi-app
+description: A Helm chart for FastAPI + SQLite + Redis application
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - fastapi
+  - sqlite
+  - redis
+  - python
+maintainers:
+  - name: sany2k8

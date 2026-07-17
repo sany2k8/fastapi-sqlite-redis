@@ -1,0 +1,45 @@
+# =============================================================================
+# Dev Environment Overrides
+# =============================================================================
+# Minimal resources, single replica, NodePort for easy local access.
+
+replicaCount: 1
+
+image:
+  tag: "latest"
+  pullPolicy: Always
+
+app:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 250m
+      memory: 128Mi
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 8000
+
+autoscaling:
+  enabled: false
+
+persistence:
+  enabled: true
+  size: 512Mi
+
+redis:
+  enabled: true
+  replicas: 1
+  resources:
+    requests:
+      cpu: 25m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 64Mi
+  persistence:
+    enabled: true
+    size: 512Mi
