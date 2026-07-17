@@ -485,7 +485,7 @@ kubectl exec -it deploy/fastapi-app -n $NS -- \
 
 ```bash
 # Verify the image exists on Docker Hub
-docker pull sany2k8/fastapi-sqlite-redis:latest
+docker pull sany2k8/fastapi-sqlite-redis-app:latest
 
 # Check pod events for the exact error
 kubectl describe pod <POD_NAME> -n $NS | grep -A 5 "Events"

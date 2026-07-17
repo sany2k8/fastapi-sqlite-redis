@@ -7,7 +7,7 @@ replicaCount: 2
 
 # -- FastAPI container image settings
 image:
-  repository: sany2k8/fastapi-sqlite-redis
+  repository: sany2k8/fastapi-sqlite-redis-app
   tag: "latest"
   pullPolicy: IfNotPresent
 

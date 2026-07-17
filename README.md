@@ -222,7 +222,7 @@ You can build and publish this application image to Docker Hub using the steps b
 Build the image locally and tag it with your Docker Hub username:
 ```bash
 # Replace <username> with your actual Docker Hub username
-docker build -t <username>/fastapi-sqlite-redis-lab:latest .
+docker build -t <username>/fastapi-sqlite-redis-app:latest .
 ```
 
 ### 2. Authenticate with Docker Hub
@@ -235,7 +235,7 @@ Provide your Docker Hub username and password or Personal Access Token (PAT) whe
 ### 3. Push the Image to Docker Hub
 Push the tagged image to your Docker Hub registry:
 ```bash
-docker push <username>/fastapi-sqlite-redis-lab:latest
+docker push <username>/fastapi-sqlite-redis-app:latest
 ```
 
 ### Pro-Tip: Multi-Platform Builds (Optional)
@@ -246,7 +246,7 @@ docker buildx create --use
 
 # Build, tag, and push in a single step
 docker buildx build --platform linux/amd64,linux/arm64 \
-  -t <username>/fastapi-sqlite-redis-lab:latest \
+  -t <username>/fastapi-sqlite-redis-app:latest \
   --push .
 ```
 
