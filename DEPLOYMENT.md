@@ -83,17 +83,52 @@ graph TD
 
 ### 1. Install Required Tools
 
+Install the Kubernetes CLI (`kubectl`), Helm (package manager), and Helmfile (declarative manager) according to your Operating System:
+
+#### macOS (using Homebrew)
 ```bash
-# Kubernetes CLI
+# Install kubectl
 brew install kubectl
 
-# Helm (v3+)
+# Install Helm (v3+)
 brew install helm
 
-# Helmfile
+# Install Helmfile
 brew install helmfile
+```
 
-# Optional: Install helmfile diff plugin (shows what will change before applying)
+#### Linux
+```bash
+# Install kubectl
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+
+# Install Helm
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+# Install Helmfile
+wget https://github.com/helmfile/helmfile/releases/download/v0.165.0/helmfile_0.165.0_linux_amd64.tar.gz
+tar -zxvf helmfile_0.165.0_linux_amd64.tar.gz
+chmod +x helmfile
+sudo mv helmfile /usr/local/bin/
+```
+
+#### Windows (using Chocolatey)
+```bash
+# Install kubectl
+choco install kubernetes-cli
+
+# Install Helm
+choco install kubernetes-helm
+
+# Install Helmfile
+choco install helmfile
+```
+
+#### Optional: Install helm-diff plugin
+Regardless of the OS, install the `helm-diff` plugin to allow Helmfile to show dry-run differences:
+```bash
 helm plugin install https://github.com/databus23/helm-diff
 ```
 

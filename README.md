@@ -64,11 +64,11 @@ flowchart TD
 
 This project contains a fully configured Helm chart and a declarative Helmfile configuration to orchestrate the FastAPI application, its SQLite database (utilizing Persistent Volume Claims), and a Redis StatefulSet cache in Kubernetes.
 
-For complete, detailed instructions on how to install prerequisites, deploy the application using Helm or Helmfile, verify your setup, perform rolling updates, and rollback releases, please refer to the dedicated **[Kubernetes Deployment Guide (DEPLOYMENT.md)](file:///Users/sany/Projects/fastapi-sqlite-redis/DEPLOYMENT.md)**.
+For complete, detailed instructions on how to install prerequisites, deploy the application using Helm or Helmfile, verify your setup, perform rolling updates, and rollback releases, please refer to the dedicated **[Kubernetes Deployment Guide (DEPLOYMENT.md)](./DEPLOYMENT.md)**.
 
 ### Quick Reference Commands
 
-For full details and environments (e.g. `staging` or `prod`), see [DEPLOYMENT.md](file:///Users/sany/Projects/fastapi-sqlite-redis/DEPLOYMENT.md).
+For full details and environments (e.g. `staging` or `prod`), see [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ```bash
 # Preview changes before applying via Helmfile
