@@ -21,35 +21,50 @@ Complete step-by-step guide to deploy **fastapi-sqlite-redis** on Kubernetes usi
 
 ## Architecture Overview
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Kubernetes Cluster                        │
-│                                                             │
-│  ┌──────────────────────────────────────────┐               │
-│  │        Namespace: fastapi-dev            │               │
-│  │                                          │               │
-│  │  ┌──────────────┐    ┌───────────────┐   │               │
-│  │  │  Deployment   │    │ StatefulSet   │   │               │
-│  │  │  (FastAPI)    │    │ (Redis)       │   │               │
-│  │  │  ┌─────────┐  │    │ ┌──────────┐  │   │               │
-│  │  │  │ Pod (1) │  │    │ │ Pod      │  │   │               │
-│  │  │  │ :8000   │  │    │ │ :6379    │  │   │               │
-│  │  │  └─────────┘  │    │ └──────────┘  │   │               │
-│  │  │  ┌─────────┐  │    │              │   │               │
-│  │  │  │ Pod (2) │  │    │  PVC: 1Gi    │   │               │
-│  │  │  │ :8000   │  │    └───────────────┘   │               │
-│  │  │  └─────────┘  │           │            │               │
-│  │  │       │       │           │            │               │
-│  │  │  PVC: 1Gi    │           │            │               │
-│  │  └──────┬───────┘           │            │               │
-│  │         │                    │            │               │
-│  │    Service:80           Service:6379     │               │
-│  │         │                                │               │
-│  │    ┌────┴──────┐                         │               │
-│  │    │  Ingress  │ (optional)              │               │
-│  │    └───────────┘                         │               │
-│  └──────────────────────────────────────────┘               │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    subgraph Cluster ["Kubernetes Cluster"]
+        subgraph NS ["Namespace: fastapi-dev"]
+            Ingress["Ingress (Optional)"]
+            
+            subgraph FastAPI_Svc_Block ["FastAPI Service"]
+                SvcFastAPI["Service: fastapi-app (Port 80)"]
+            end
+            
+            subgraph FastAPI_Deploy ["Deployment: fastapi-app"]
+                Pod1["FastAPI Pod 1 (Port 8000)"]
+                Pod2["FastAPI Pod 2 (Port 8000)"]
+            end
+            
+            PVCFastAPI[("PVC: sqlite-data (1Gi)")]
+            
+            subgraph Redis_Svc_Block ["Redis Service"]
+                SvcRedis["Service: fastapi-app-redis-master (Port 6379)"]
+            end
+            
+            subgraph Redis_SS ["StatefulSet: fastapi-app-redis-master"]
+                PodRedis["Redis Pod (Port 6379)"]
+            end
+            
+            PVCRedis[("PVC: redis-data (1Gi)")]
+        end
+    end
+
+    Client["API Client / Browser"] --> Ingress
+    Ingress --> SvcFastAPI
+    Client -->|Port-Forward 8080:80| SvcFastAPI
+    
+    SvcFastAPI --> Pod1
+    SvcFastAPI --> Pod2
+    
+    Pod1 --> PVCFastAPI
+    Pod2 --> PVCFastAPI
+    
+    Pod1 --> SvcRedis
+    Pod2 --> SvcRedis
+    
+    SvcRedis --> PodRedis
+    PodRedis --> PVCRedis
 ```
 
 **Key Components:**
@@ -304,13 +319,42 @@ kubectl describe statefulset fastapi-app-redis-master -n $NS
 
 ### Access the Application
 
-```bash
-# Port-forward the FastAPI service to localhost
-kubectl port-forward svc/fastapi-app 8080:80 -n $NS
+Depending on how your Kubernetes cluster is running (especially in local environments), accessing the application via `NodePort` or `localhost` varies:
 
-# Now test the endpoints:
+#### Option A: Port Forwarding (Recommended & Cluster-Agnostic)
+Port forwarding tunnels traffic directly from your machine to the Kubernetes service. It works in all clusters (Kind, Minikube, cloud providers, etc.).
+
+```bash
+# Tunnel port 8080 on your host machine to port 80 of the service
+kubectl port-forward svc/fastapi-app 8080:80 -n $NS
+```
+
+> [!NOTE]
+> If you get a `bind: address already in use` error, it means another process (or port-forward) is running on `8080`. Simply map it to a different local port (like `8081` or `9000`):
+> ```bash
+> kubectl port-forward svc/fastapi-app 8081:80 -n $NS
+> ```
+
+Once the tunnel is active, access the app at `http://localhost:8080` (or `http://localhost:8081`).
+
+#### Option B: Accessing NodePort directly (Setup-Dependent)
+The Helm chart exposes the web service using `NodePort` on port `31724` by default:
+
+- **Docker Desktop**: The service is automatically mapped to localhost. Access it at `http://localhost:31724`.
+- **Minikube**: NodePort requires retrieving the Minikube virtual machine IP. Run:
+  ```bash
+  minikube service fastapi-app -n $NS --url
+  ```
+- **Kind on macOS / Windows**: Because Kind runs inside Docker containers (which run in a virtual machine on macOS/Windows), node IPs are **not** directly routable from your host. You **must** either use Port Forwarding (Option A above) or have pre-configured `extraPortMappings` on ports `80`/`443` when you created the Kind cluster.
+
+#### Test the Endpoints
+With either method, you can verify connection using `curl`:
+```bash
+# Fetch root & health check
 curl http://localhost:8080/
 curl http://localhost:8080/health
+
+# Database and counter integrations
 curl http://localhost:8080/items
 curl -X POST http://localhost:8080/items -H "Content-Type: application/json" -d '{"name": "hello-k8s"}'
 curl http://localhost:8080/items/cached

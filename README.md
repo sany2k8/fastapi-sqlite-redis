@@ -62,155 +62,24 @@ flowchart TD
 
 ## Kubernetes Deployment (Helm & Helmfile)
 
-This project contains a fully configured Helm chart and a declarative Helmfile setup to run the FastAPI application, SQLite database (with persistent volumes), and a Redis StatefulSet in a Kubernetes cluster.
+This project contains a fully configured Helm chart and a declarative Helmfile configuration to orchestrate the FastAPI application, its SQLite database (utilizing Persistent Volume Claims), and a Redis StatefulSet cache in Kubernetes.
 
-### Prerequisites
+For complete, detailed instructions on how to install prerequisites, deploy the application using Helm or Helmfile, verify your setup, perform rolling updates, and rollback releases, please refer to the dedicated **[Kubernetes Deployment Guide (DEPLOYMENT.md)](file:///Users/sany/Projects/fastapi-sqlite-redis/DEPLOYMENT.md)**.
 
-- **kubectl** CLI installed.
-- **Helm** (v3+) installed.
-- **Helmfile** installed.
-- A running Kubernetes cluster (e.g., Minikube, Kind, Docker Desktop Kubernetes).
+### Quick Reference Commands
 
----
-
-### Installing Helm and Helmfile
-
-#### Install Helm
-
-Helm is the Kubernetes package manager. Follow these instructions based on your operating system:
-
-**macOS (using Homebrew):**
-```bash
-brew install helm
-```
-
-**Linux (using curl):**
-```bash
-curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-```
-
-**Windows (using Chocolatey):**
-```bash
-choco install kubernetes-helm
-```
-
-**Verify the installation:**
-```bash
-helm version
-```
-
-For detailed installation instructions, visit the [official Helm documentation](https://helm.sh/docs/intro/install/).
-
----
-
-#### Install Helmfile
-
-Helmfile is a declarative way to manage Helm charts across multiple environments. Install it using:
-
-**macOS (using Homebrew):**
-```bash
-brew install helmfile
-```
-
-**Linux (using curl):**
-```bash
-wget https://github.com/roboll/helmfile/releases/download/v0.144.0/helmfile_linux_amd64
-chmod +x helmfile_linux_amd64
-sudo mv helmfile_linux_amd64 /usr/local/bin/helmfile
-```
-
-**Windows (using Chocolatey):**
-```bash
-choco install helmfile
-```
-
-**Verify the installation:**
-```bash
-helmfile version
-```
-
-For detailed installation instructions, visit the [official Helmfile documentation](https://github.com/roboll/helmfile).
-
----
-
-### Option A: Deploying with Helm (Directly)
-
-Use Helm to install the chart in a single namespace (e.g., `fastapi-dev`):
+For full details and environments (e.g. `staging` or `prod`), see [DEPLOYMENT.md](file:///Users/sany/Projects/fastapi-sqlite-redis/DEPLOYMENT.md).
 
 ```bash
-# 1. Validate the Helm chart structure
-helm lint ./helm/fastapi-app
-
-# 2. Deploy/Install the application and Redis dependency
-helm install fastapi-app ./helm/fastapi-app \
-  --namespace fastapi-dev \
-  --create-namespace \
-  --wait \
-  --timeout 5m
-```
-
-To override values for specific environments (e.g., using staging configurations):
-```bash
-helm install fastapi-app ./helm/fastapi-app \
-  --namespace fastapi-staging \
-  --create-namespace \
-  -f ./environments/staging/values.yaml \
-  --wait
-```
-
----
-
-### Option B: Deploying with Helmfile (Declarative & Recommended)
-
-Helmfile allows you to manage deployments declaratively across environments (`dev`, `staging`, `prod`) using environment-specific values files.
-
-```bash
-# 1. Preview changes before applying (dry-run)
+# Preview changes before applying via Helmfile
 helmfile -e dev diff
 
-# 2. Deploy to the dev environment
+# Sync/Deploy changes via Helmfile
 helmfile -e dev sync
+
+# View all resources in the dev namespace
+kubectl get all -n fastapi-dev
 ```
-
-To deploy to other environments:
-```bash
-# Deploy to staging
-helmfile -e staging sync
-
-# Deploy to production
-helmfile -e prod sync
-```
-
----
-
-### Post-Deployment & Verification
-
-1. **Verify Resources are Running**:
-   ```bash
-   kubectl get all -n fastapi-dev
-   ```
-
-2. **Access the Application**:
-   Port-forward the FastAPI service to your local machine:
-   ```bash
-   kubectl port-forward svc/fastapi-app 8080:80 -n fastapi-dev
-   ```
-   Now open your browser to **`http://localhost:8080/docs`** to view endpoints.
-
-3. **Verify Caching and DB functionality**:
-   ```bash
-   # Test counter (Redis integration)
-   curl http://localhost:8080/counter
-
-   # Test cache-aside items retrieval
-   curl http://localhost:8080/items/cached
-   ```
-
-4. **Run Helm Tests**:
-   ```bash
-   helm test fastapi-app -n fastapi-dev
-   ```
-
 
 ---
 
